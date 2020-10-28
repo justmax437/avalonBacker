@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package proto;
+option go_package = "api";
+
+import "google/protobuf/empty.proto";
+
+//TODO: Better handling of exceptional moments, separate error type instead of Empty
+service GameService {
+  //CreateSession with specified players and options.
+  //Should be called first to obtain a handle for created game,
+  //that will be used in most other parts of API.
+  rpc CreateSession (GameConfig) returns (GameSession) {}
+  //TerminateSession end current game session, freeing it's UUID and other resources
+  rpc TerminateSession (GameSession) returns (google.protobuf.Empty) {}
+  //GetSession returns in-progress game session data
+  rpc GetSession (UUID) returns (GameSession) {}
+  //GetEvilTeam returns information about the bad boys in the game session
+  rpc GetEvilTeam (GameSession) returns (EvilTeam) {}
+  //GetVirtuousTeam returns information about the good guys in the game session
+  rpc GetVirtuousTeam (GameSession) returns (VirtuousTeam) {}
+  //PushGameState proceeds game to the next state, returns updated session data
+  rpc PushGameState (GameSession) returns (GameSession) {}
+  //GetPendingMission returns current mission in progress
+  rpc GetPendingMission (GameSession) returns (PendingMission) {}
+  //AssignMissionTeam proposes a set of players, picked by leader, to be voted for sending them on a mission.
+  //Returns null if there is no mission pending.
+  rpc AssignMissionTeam (GameSession) returns (google.protobuf.Empty) {}
+  //GetMissionTeam returns a team, assigned for pending mission, if any.
+  //Returns null if there is no team assigned yet.
+  rpc GetMissionTeam (GameSession) returns (MissionTeam) {}
+
+  //Votes are only accepted for games in MISSION_*_VOTING states
+  //Call PushGameState AFTER ALL players voted!
+  rpc VoteForMissionTeam (VoteContext) returns (google.protobuf.Empty) {}
+  rpc VoteForMissionSuccess (VoteContext) returns (google.protobuf.Empty) {}
+}
+
+//Maybe at some point we will get to it...
+//service LeaderBoardService {}
+
+//UUID v4 as in RFC 4122 for identifying game sessions
+message UUID {
+  string value = 1;
+}
+
+//GameSession describes the game in progress
+//Used in most parts of the API specifying exact session to perform actions on
+message GameSession {
+  UUID game_id = 1; //Backend-generated, never changes during gameplay
+  enum GameState {
+    GAME_CREATED = 0;
+    MISSION_STARTED = 10;
+    MISSION_TEAM_PICKING = 20;
+    MISSION_TEAM_VOTING = 25;
+    MISSION_SUCCESS_VOTING = 26;
+    MISSION_ENDED = 30;
+    POST_MISSIONS_ACTIONS = 100; // For playing additional roles, ignoring for now
+    VIRTUOUS_TEAM_WON = 150;
+    EVIL_TEAM_WON = 155;
+  }
+  GameState state = 10;
+  Player leader = 20;
+  MissionResult last_mission_result = 30; //Set at MISSION_ENDED state
+  //What else?
+}
+
+//GameConfig holds data about teams and session configuration to create session with
+message GameConfig {
+  VirtuousTeam good_team = 10;
+  EvilTeam evil_team = 20;
+  GameExtensions extensions = 100; //Ignored for now
+}
+
+//GameExtensions holds flags specifying additional player roles and rules to be used during game session
+message GameExtensions {
+  bool percival_and_morgana = 1;
+  bool assassin_and_merlin = 2;
+  bool oberon = 3;
+  bool mordred = 4;
+  //bool lady_of_the_lake
+}
+
+message Player {
+  uint64 id = 1; //Telegram uid
+  string user_name = 10;
+}
+
+message EvilTeam {
+  repeated Player members = 10;
+  //Ignored for now
+  Player assassin = 20;
+  Player oberon = 30;
+  Player morgana = 40;
+}
+
+message VirtuousTeam {
+  repeated Player members = 10;
+  //Ignored for now
+  Player merlin = 20;
+  Player percival = 30;
+}
+
+message PendingMission {
+  uint32 mission_number = 10;
+  uint32 times_voted = 20;
+}
+
+message MissionTeam {
+  repeated Player members = 10;
+}
+
+message MissionResult {
+  bool failed = 10;
+  //TODO: There must be a better way, than just 2 lists
+  repeated Player positive_votes = 20;
+  repeated Player negative_votes = 30;
+}
+
+message VoteContext {
+  GameSession session = 10;
+  Player voter = 20;
+  enum VoteOption {
+    NEGATIVE = 0;
+    POSITIVE = 1;
+  }
+  VoteOption vote = 30;
+}
