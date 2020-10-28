@@ -25,7 +25,7 @@ service GameService {
   rpc GetPendingMission (GameSession) returns (PendingMission) {}
   //AssignMissionTeam proposes a set of players, picked by leader, to be voted for sending them on a mission.
   //Returns null if there is no mission pending.
-  rpc AssignMissionTeam (GameSession) returns (google.protobuf.Empty) {}
+  rpc AssignMissionTeam (AssignTeamContext) returns (google.protobuf.Empty) {}
   //GetMissionTeam returns a team, assigned for pending mission, if any.
   //Returns null if there is no team assigned yet.
   rpc GetMissionTeam (GameSession) returns (MissionTeam) {}
@@ -115,6 +115,11 @@ message MissionResult {
   //TODO: There must be a better way, than just 2 lists
   repeated Player positive_votes = 20;
   repeated Player negative_votes = 30;
+}
+
+message AssignTeamContext {
+  GameSession session = 10;
+  MissionTeam team = 20;
 }
 
 message VoteContext {
