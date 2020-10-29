@@ -19,9 +19,3 @@ type GameSessionStorage interface {
 	CheckExistance(id uuid.UUID) (bool, error)
 	NumberOfGames() (uint, error)
 }
-
-var storage GameSessionStorage
-
-func setSessionsStorage(st GameSessionStorage) {
-	storage = st
-}
