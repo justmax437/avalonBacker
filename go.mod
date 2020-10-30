@@ -1,4 +1,5 @@
 module github.com/justmax437/avalonBacker
+
 // +heroku goVersion 1.15.3
 go 1.15
 

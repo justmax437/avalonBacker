@@ -127,6 +127,9 @@ func (g *simpleGameService) GetMissionTeam(ctx context.Context, session *api.Gam
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
+	if game.State != api.GameSession_MISSION_TEAM_VOTING {
+		return nil, errors.New("no active mission")
+	}
 	//TODO: Check if mission is in progress
 	return &game.MissionTeam, nil
 }
