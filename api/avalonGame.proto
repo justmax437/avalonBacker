@@ -50,7 +50,7 @@ message GameSession {
   UUID game_id = 1; //Backend-generated, never changes during gameplay
   enum GameState {
     GAME_CREATED = 0;
-    MISSION_STARTED = 10;
+    //MISSION_STARTED = 10;
     MISSION_TEAM_PICKING = 20;
     MISSION_TEAM_VOTING = 25;
     MISSION_SUCCESS_VOTING = 26;
