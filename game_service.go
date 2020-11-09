@@ -22,7 +22,7 @@ func NewGameService(s GameSessionStorage) *simpleGameService {
 	return gs
 }
 
-func (g *simpleGameService) CreateSession(ctx context.Context, config *api.GameConfig) (*api.GameSession, error) {
+func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameConfig) (*api.GameSession, error) {
 	if !checkNumberOfPlayersValid(len(config.GoodTeam.Members), len(config.EvilTeam.Members)) {
 		return nil, errors.New("provided teams are not balanced by the game rules")
 	}
@@ -50,20 +50,20 @@ func (g *simpleGameService) CreateSession(ctx context.Context, config *api.GameC
 
 }
 
-func (g *simpleGameService) TerminateSession(ctx context.Context, session *api.GameSession) (*types.Empty, error) {
+func (g *simpleGameService) TerminateSession(_ context.Context, session *api.GameSession) (*types.Empty, error) {
 	gameId, err := uuid.Parse(session.GameId.Value)
 	if err != nil {
 		return nil, errors.New("failed to parse session UUID: " + err.Error())
 	}
 
-	if exist, err := g.sessions.CheckExistance(gameId); err == nil && exist {
+	if exist, err := g.sessions.CheckExistence(gameId); err == nil && exist {
 		return nil, g.sessions.CloseSession(gameId)
 	} else {
 		return nil, errors.New("failed to terminate session: " + err.Error())
 	}
 }
 
-func (g *simpleGameService) GetSession(ctx context.Context, gameId *api.UUID) (*api.GameSession, error) {
+func (g *simpleGameService) GetSession(_ context.Context, gameId *api.UUID) (*api.GameSession, error) {
 	gi, err := g.sessions.GetSession(apiIDToUUID(gameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -71,7 +71,7 @@ func (g *simpleGameService) GetSession(ctx context.Context, gameId *api.UUID) (*
 	return &gi.GameSession, nil
 }
 
-func (g *simpleGameService) GetEvilTeam(ctx context.Context, session *api.GameSession) (*api.EvilTeam, error) {
+func (g *simpleGameService) GetEvilTeam(_ context.Context, session *api.GameSession) (*api.EvilTeam, error) {
 	game, err := g.sessions.GetSession(apiIDToUUID(session.GameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -79,7 +79,7 @@ func (g *simpleGameService) GetEvilTeam(ctx context.Context, session *api.GameSe
 	return game.EvilTeam, nil
 }
 
-func (g *simpleGameService) GetVirtuousTeam(ctx context.Context, session *api.GameSession) (*api.VirtuousTeam, error) {
+func (g *simpleGameService) GetVirtuousTeam(_ context.Context, session *api.GameSession) (*api.VirtuousTeam, error) {
 	game, err := g.sessions.GetSession(apiIDToUUID(session.GameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -87,11 +87,11 @@ func (g *simpleGameService) GetVirtuousTeam(ctx context.Context, session *api.Ga
 	return game.GoodTeam, nil
 }
 
-func (g *simpleGameService) PushGameState(ctx context.Context, session *api.GameSession) (*api.GameSession, error) {
+func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSession) (*api.GameSession, error) {
 	panic("implement me")
 }
 
-func (g *simpleGameService) GetPendingMission(ctx context.Context, session *api.GameSession) (*api.PendingMission, error) {
+func (g *simpleGameService) GetPendingMission(_ context.Context, session *api.GameSession) (*api.PendingMission, error) {
 	game, err := g.sessions.GetSession(apiIDToUUID(session.GameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -104,7 +104,7 @@ func (g *simpleGameService) GetPendingMission(ctx context.Context, session *api.
 	}
 }
 
-func (g *simpleGameService) AssignMissionTeam(ctx context.Context, assignReq *api.AssignTeamContext) (*types.Empty, error) {
+func (g *simpleGameService) AssignMissionTeam(_ context.Context, assignReq *api.AssignTeamContext) (*types.Empty, error) {
 	game, err := g.sessions.GetSession(apiIDToUUID(assignReq.Session.GameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -122,7 +122,7 @@ func (g *simpleGameService) AssignMissionTeam(ctx context.Context, assignReq *ap
 	return nil, nil
 }
 
-func (g *simpleGameService) GetMissionTeam(ctx context.Context, session *api.GameSession) (*api.MissionTeam, error) {
+func (g *simpleGameService) GetMissionTeam(_ context.Context, session *api.GameSession) (*api.MissionTeam, error) {
 	game, err := g.sessions.GetSession(apiIDToUUID(session.GameId))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
@@ -130,15 +130,14 @@ func (g *simpleGameService) GetMissionTeam(ctx context.Context, session *api.Gam
 	if game.State > api.GameSession_MISSION_TEAM_PICKING && game.State <= api.GameSession_MISSION_ENDED {
 		return nil, errors.New("no active mission")
 	}
-	//TODO: Check if mission is in progress
 	return &game.MissionTeam, nil
 }
 
-func (g *simpleGameService) VoteForMissionTeam(ctx context.Context, context *api.VoteContext) (*types.Empty, error) {
+func (g *simpleGameService) VoteForMissionTeam(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
 	panic("implement me")
 }
 
-func (g *simpleGameService) VoteForMissionSuccess(ctx context.Context, context *api.VoteContext) (*types.Empty, error) {
+func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
 	panic("implement me")
 }
 

@@ -39,9 +39,25 @@ func (i *memoryStorage) CloseSession(id uuid.UUID) error {
 	return nil
 }
 
-func (i *memoryStorage) CheckExistance(id uuid.UUID) (bool, error) {
+func (i *memoryStorage) CheckExistence(id uuid.UUID) (bool, error) {
 	_, found := i.stor.Get(id.String())
 	return found, nil
+}
+
+func (i *memoryStorage) TeamVoteSuccess(id uuid.UUID) (bool, error) {
+	game, found := i.stor.Get(id.String())
+	if !found {
+		return false, ErrSessionNotFound
+	}
+	return game.(*GameInstance).State >= 26, nil
+}
+
+func (i *memoryStorage) MissionVoteSuccess(id uuid.UUID) (bool, error) {
+	game, found := i.stor.Get(id.String())
+	if !found {
+		return false, ErrSessionNotFound
+	}
+	return game.(*GameInstance).State == 150, nil
 }
 
 func (i *memoryStorage) NumberOfGames() (uint, error) {
