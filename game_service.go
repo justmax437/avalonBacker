@@ -134,7 +134,21 @@ func (g *simpleGameService) GetMissionTeam(_ context.Context, session *api.GameS
 }
 
 func (g *simpleGameService) VoteForMissionTeam(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
-	panic("implement me")
+	game, err := g.sessions.GetSession(apiIDToUUID(context.Session.GameId))
+	if err != nil {
+		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+	if game.State != api.GameSession_MISSION_TEAM_VOTING {
+		return nil, errors.New("mission team votes are only allowed in MISSION_TEAM_VOTING state")
+	}
+	if game.Mission.TimesVoted == 5 {
+		game.State = api.GameSession_EVIL_TEAM_WON
+	}
+	if err = g.sessions.StoreSession(game); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
