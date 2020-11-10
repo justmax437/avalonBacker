@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/OrlovEvgeny/go-mcache"
 	"github.com/google/uuid"
+	"github.com/justmax437/avalonBacker/api"
 	"time"
 )
 
@@ -39,9 +40,25 @@ func (i *memoryStorage) CloseSession(id uuid.UUID) error {
 	return nil
 }
 
-func (i *memoryStorage) CheckExistance(id uuid.UUID) (bool, error) {
+func (i *memoryStorage) CheckExistence(id uuid.UUID) (bool, error) {
 	_, found := i.stor.Get(id.String())
 	return found, nil
+}
+
+func (i *memoryStorage) TeamVoteSuccess(id uuid.UUID) (bool, error) {
+	game, found := i.stor.Get(id.String())
+	if !found {
+		return false, ErrSessionNotFound
+	}
+	return game.(*GameInstance).State >= api.GameSession_MISSION_SUCCESS_VOTING, nil
+}
+
+func (i *memoryStorage) MissionVoteSuccess(id uuid.UUID) (bool, error) {
+	game, found := i.stor.Get(id.String())
+	if !found {
+		return false, ErrSessionNotFound
+	}
+	return game.(*GameInstance).State == api.GameSession_VIRTUOUS_TEAM_WON, nil
 }
 
 func (i *memoryStorage) NumberOfGames() (uint, error) {
