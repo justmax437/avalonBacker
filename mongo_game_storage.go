@@ -71,25 +71,50 @@ func (i *mongoSessionStorage) StoreSession(session *GameInstance) error {
 func (i *mongoSessionStorage) GetSession(id uuid.UUID) (*GameInstance, error) {
 	singleRes := i.mColl.FindOne(
 		context.Background(),
-		M{"game_id": M{"eq": id.String()}},
+		M{"game_id": M{"eq": id.String()}}, //Get only game session with matching uuid
 	)
 
 	if err := singleRes.Err(); err != nil {
 		log.Println("failed to fetch session data from mongo: ", err)
 		return nil, err
 	}
+
+	ret := new(GameInstance)
+	err := singleRes.Decode(ret)
+	if err != nil {
+		log.Println("failed to decode session data from mongo: ", err)
+		return nil, err
+	}
+
+	return ret, nil
 }
 
 func (i *mongoSessionStorage) CloseSession(id uuid.UUID) error {
+	_, err := i.mColl.DeleteOne(
+		context.Background(),
+		M{"game_id": M{"eq": id.String()}}, //Delete only game session with matching uuid
+	)
 
+	if err != nil {
+		log.Println("failed to delete session data from mongo: ", err)
+	}
+	return err
 }
 
 func (i *mongoSessionStorage) CheckExistance(id uuid.UUID) (bool, error) {
-
+	n, err := i.mColl.CountDocuments(
+		context.Background(),
+		M{"game_id": M{"eq": id.String()}},
+	)
+	return n > 0, err
 }
 
 func (i *mongoSessionStorage) NumberOfGames() (uint, error) {
-
+	n, err := i.mColl.CountDocuments(
+		context.Background(),
+		M{}, // Empty filter to count everything
+	)
+	return uint(n), err
 }
 
 func ensureCollectionAndIndexes(mClient *mgo.Client) *mgo.Collection {
@@ -99,7 +124,7 @@ func ensureCollectionAndIndexes(mClient *mgo.Client) *mgo.Collection {
 		//Collection already exists?
 		if _, exist := err.(mgo.CommandError); exist {
 			//Yes, no need to create one
-			return
+			return mDB.Collection("avalonGames")
 		} else {
 			//No, its generic error
 			log.Fatal(err)
@@ -110,8 +135,8 @@ func ensureCollectionAndIndexes(mClient *mgo.Client) *mgo.Collection {
 	_, err = mColl.Indexes().CreateMany(
 		context.Background(),
 		[]mgo.IndexModel{
-			mgo.IndexModel{
-				Keys: "uuid",
+			{
+				Keys: "game_id",
 				Options: options.Index().
 					SetUnique(true),
 			},
