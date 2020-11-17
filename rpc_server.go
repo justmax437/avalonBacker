@@ -6,14 +6,14 @@ import (
 	"log"
 	"net"
 	"os"
-	"time"
 )
 
 func main() {
 	grpcServer := grpc.NewServer()
 	api.RegisterGameServiceServer(grpcServer,
 		NewGameService(
-			NewMemoryStorage(30*time.Minute),
+			//NewMemoryStorage(30*time.Minute),
+			NewMongoSessionStorage(),
 		),
 	)
 
