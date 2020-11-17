@@ -17,7 +17,5 @@ type GameSessionStorage interface {
 	GetSession(id uuid.UUID) (*GameInstance, error)
 	CloseSession(id uuid.UUID) error
 	CheckExistence(id uuid.UUID) (bool, error)
-	TeamVoteSuccess(id uuid.UUID) (bool, error)
-	MissionVoteSuccess(id uuid.UUID) (bool, error)
 	NumberOfGames() (uint, error)
 }
