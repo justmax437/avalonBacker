@@ -98,7 +98,7 @@ func (VoteContext_VoteOption) EnumDescriptor() ([]byte, []int) {
 
 //UUID v4 as in RFC 4122 for identifying game sessions
 type UUID struct {
-	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Value string `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty" bson:"value,omitempty"`
 }
 
 func (m *UUID) Reset()         { *m = UUID{} }
@@ -144,10 +144,10 @@ func (m *UUID) GetValue() string {
 //GameSession describes the game in progress
 //Used in most parts of the API specifying exact session to perform actions on
 type GameSession struct {
-	GameId            *UUID                 `protobuf:"bytes,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
-	State             GameSession_GameState `protobuf:"varint,10,opt,name=state,proto3,enum=proto.GameSession_GameState" json:"state,omitempty"`
-	Leader            *Player               `protobuf:"bytes,20,opt,name=leader,proto3" json:"leader,omitempty"`
-	LastMissionResult *MissionResult        `protobuf:"bytes,30,opt,name=last_mission_result,json=lastMissionResult,proto3" json:"last_mission_result,omitempty"`
+	GameId            *UUID                 `protobuf:"bytes,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty" bson:"game_id,omitempty"`
+	State             GameSession_GameState `protobuf:"varint,10,opt,name=state,proto3,enum=proto.GameSession_GameState" json:"state,omitempty" bson:"state,omitempty"`
+	Leader            *Player               `protobuf:"bytes,20,opt,name=leader,proto3" json:"leader,omitempty" bson:"leader,omitempty"`
+	LastMissionResult *MissionResult        `protobuf:"bytes,30,opt,name=last_mission_result,json=lastMissionResult,proto3" json:"last_mission_result,omitempty" bson:"last_mission_result,omitempty"`
 }
 
 func (m *GameSession) Reset()         { *m = GameSession{} }
@@ -213,9 +213,9 @@ func (m *GameSession) GetLastMissionResult() *MissionResult {
 
 //GameConfig holds data about teams and session configuration to create session with
 type GameConfig struct {
-	GoodTeam   *VirtuousTeam   `protobuf:"bytes,10,opt,name=good_team,json=goodTeam,proto3" json:"good_team,omitempty"`
-	EvilTeam   *EvilTeam       `protobuf:"bytes,20,opt,name=evil_team,json=evilTeam,proto3" json:"evil_team,omitempty"`
-	Extensions *GameExtensions `protobuf:"bytes,100,opt,name=extensions,proto3" json:"extensions,omitempty"`
+	GoodTeam   *VirtuousTeam   `protobuf:"bytes,10,opt,name=good_team,json=goodTeam,proto3" json:"good_team,omitempty" bson:"good_team,omitempty"`
+	EvilTeam   *EvilTeam       `protobuf:"bytes,20,opt,name=evil_team,json=evilTeam,proto3" json:"evil_team,omitempty" bson:"evil_team,omitempty"`
+	Extensions *GameExtensions `protobuf:"bytes,100,opt,name=extensions,proto3" json:"extensions,omitempty" bson:"extensions,omitempty"`
 }
 
 func (m *GameConfig) Reset()         { *m = GameConfig{} }
@@ -274,10 +274,10 @@ func (m *GameConfig) GetExtensions() *GameExtensions {
 
 //GameExtensions holds flags specifying additional player roles and rules to be used during game session
 type GameExtensions struct {
-	PercivalAndMorgana bool `protobuf:"varint,1,opt,name=percival_and_morgana,json=percivalAndMorgana,proto3" json:"percival_and_morgana,omitempty"`
-	AssassinAndMerlin  bool `protobuf:"varint,2,opt,name=assassin_and_merlin,json=assassinAndMerlin,proto3" json:"assassin_and_merlin,omitempty"`
-	Oberon             bool `protobuf:"varint,3,opt,name=oberon,proto3" json:"oberon,omitempty"`
-	Mordred            bool `protobuf:"varint,4,opt,name=mordred,proto3" json:"mordred,omitempty"`
+	PercivalAndMorgana bool `protobuf:"varint,1,opt,name=percival_and_morgana,json=percivalAndMorgana,proto3" json:"percival_and_morgana,omitempty" bson:"percival_and_morgana,omitempty"`
+	AssassinAndMerlin  bool `protobuf:"varint,2,opt,name=assassin_and_merlin,json=assassinAndMerlin,proto3" json:"assassin_and_merlin,omitempty" bson:"assassin_and_merlin,omitempty"`
+	Oberon             bool `protobuf:"varint,3,opt,name=oberon,proto3" json:"oberon,omitempty" bson:"oberon,omitempty"`
+	Mordred            bool `protobuf:"varint,4,opt,name=mordred,proto3" json:"mordred,omitempty" bson:"mordred,omitempty"`
 }
 
 func (m *GameExtensions) Reset()         { *m = GameExtensions{} }
@@ -342,8 +342,8 @@ func (m *GameExtensions) GetMordred() bool {
 }
 
 type Player struct {
-	Id       uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	UserName string `protobuf:"bytes,10,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
+	Id       uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" bson:"id,omitempty"`
+	UserName string `protobuf:"bytes,10,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty" bson:"user_name,omitempty"`
 }
 
 func (m *Player) Reset()         { *m = Player{} }
@@ -394,11 +394,11 @@ func (m *Player) GetUserName() string {
 }
 
 type EvilTeam struct {
-	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty"`
+	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty" bson:"members,omitempty"`
 	//Ignored for now
-	Assassin *Player `protobuf:"bytes,20,opt,name=assassin,proto3" json:"assassin,omitempty"`
-	Oberon   *Player `protobuf:"bytes,30,opt,name=oberon,proto3" json:"oberon,omitempty"`
-	Morgana  *Player `protobuf:"bytes,40,opt,name=morgana,proto3" json:"morgana,omitempty"`
+	Assassin *Player `protobuf:"bytes,20,opt,name=assassin,proto3" json:"assassin,omitempty" bson:"assassin,omitempty"`
+	Oberon   *Player `protobuf:"bytes,30,opt,name=oberon,proto3" json:"oberon,omitempty" bson:"oberon,omitempty"`
+	Morgana  *Player `protobuf:"bytes,40,opt,name=morgana,proto3" json:"morgana,omitempty" bson:"morgana,omitempty"`
 }
 
 func (m *EvilTeam) Reset()         { *m = EvilTeam{} }
@@ -463,10 +463,10 @@ func (m *EvilTeam) GetMorgana() *Player {
 }
 
 type VirtuousTeam struct {
-	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty"`
+	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty" bson:"members,omitempty"`
 	//Ignored for now
-	Merlin   *Player `protobuf:"bytes,20,opt,name=merlin,proto3" json:"merlin,omitempty"`
-	Percival *Player `protobuf:"bytes,30,opt,name=percival,proto3" json:"percival,omitempty"`
+	Merlin   *Player `protobuf:"bytes,20,opt,name=merlin,proto3" json:"merlin,omitempty" bson:"merlin,omitempty"`
+	Percival *Player `protobuf:"bytes,30,opt,name=percival,proto3" json:"percival,omitempty" bson:"percival,omitempty"`
 }
 
 func (m *VirtuousTeam) Reset()         { *m = VirtuousTeam{} }
@@ -524,8 +524,8 @@ func (m *VirtuousTeam) GetPercival() *Player {
 }
 
 type PendingMission struct {
-	MissionNumber uint32 `protobuf:"varint,10,opt,name=mission_number,json=missionNumber,proto3" json:"mission_number,omitempty"`
-	TimesVoted    uint32 `protobuf:"varint,20,opt,name=times_voted,json=timesVoted,proto3" json:"times_voted,omitempty"`
+	MissionNumber uint32 `protobuf:"varint,10,opt,name=mission_number,json=missionNumber,proto3" json:"mission_number,omitempty" bson:"mission_number,omitempty"`
+	TimesVoted    uint32 `protobuf:"varint,20,opt,name=times_voted,json=timesVoted,proto3" json:"times_voted,omitempty" bson:"times_voted,omitempty"`
 }
 
 func (m *PendingMission) Reset()         { *m = PendingMission{} }
@@ -576,7 +576,7 @@ func (m *PendingMission) GetTimesVoted() uint32 {
 }
 
 type MissionTeam struct {
-	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty"`
+	Members []*Player `protobuf:"bytes,10,rep,name=members,proto3" json:"members,omitempty" bson:"members,omitempty"`
 }
 
 func (m *MissionTeam) Reset()         { *m = MissionTeam{} }
@@ -620,10 +620,10 @@ func (m *MissionTeam) GetMembers() []*Player {
 }
 
 type MissionResult struct {
-	Failed bool `protobuf:"varint,10,opt,name=failed,proto3" json:"failed,omitempty"`
+	Failed bool `protobuf:"varint,10,opt,name=failed,proto3" json:"failed,omitempty" bson:"failed,omitempty"`
 	//TODO: There must be a better way, than just 2 lists
-	PositiveVotes []*Player `protobuf:"bytes,20,rep,name=positive_votes,json=positiveVotes,proto3" json:"positive_votes,omitempty"`
-	NegativeVotes []*Player `protobuf:"bytes,30,rep,name=negative_votes,json=negativeVotes,proto3" json:"negative_votes,omitempty"`
+	PositiveVotes []*Player `protobuf:"bytes,20,rep,name=positive_votes,json=positiveVotes,proto3" json:"positive_votes,omitempty" bson:"positive_votes,omitempty"`
+	NegativeVotes []*Player `protobuf:"bytes,30,rep,name=negative_votes,json=negativeVotes,proto3" json:"negative_votes,omitempty" bson:"negative_votes,omitempty"`
 }
 
 func (m *MissionResult) Reset()         { *m = MissionResult{} }
@@ -681,8 +681,8 @@ func (m *MissionResult) GetNegativeVotes() []*Player {
 }
 
 type AssignTeamContext struct {
-	Session *GameSession `protobuf:"bytes,10,opt,name=session,proto3" json:"session,omitempty"`
-	Team    *MissionTeam `protobuf:"bytes,20,opt,name=team,proto3" json:"team,omitempty"`
+	Session *GameSession `protobuf:"bytes,10,opt,name=session,proto3" json:"session,omitempty" bson:"session,omitempty"`
+	Team    *MissionTeam `protobuf:"bytes,20,opt,name=team,proto3" json:"team,omitempty" bson:"team,omitempty"`
 }
 
 func (m *AssignTeamContext) Reset()         { *m = AssignTeamContext{} }
@@ -733,9 +733,9 @@ func (m *AssignTeamContext) GetTeam() *MissionTeam {
 }
 
 type VoteContext struct {
-	Session *GameSession           `protobuf:"bytes,10,opt,name=session,proto3" json:"session,omitempty"`
-	Voter   *Player                `protobuf:"bytes,20,opt,name=voter,proto3" json:"voter,omitempty"`
-	Vote    VoteContext_VoteOption `protobuf:"varint,30,opt,name=vote,proto3,enum=proto.VoteContext_VoteOption" json:"vote,omitempty"`
+	Session *GameSession           `protobuf:"bytes,10,opt,name=session,proto3" json:"session,omitempty" bson:"session,omitempty"`
+	Voter   *Player                `protobuf:"bytes,20,opt,name=voter,proto3" json:"voter,omitempty" bson:"voter,omitempty"`
+	Vote    VoteContext_VoteOption `protobuf:"varint,30,opt,name=vote,proto3,enum=proto.VoteContext_VoteOption" json:"vote,omitempty" bson:"vote,omitempty"`
 }
 
 func (m *VoteContext) Reset()         { *m = VoteContext{} }
