@@ -7,5 +7,6 @@ require (
 	github.com/OrlovEvgeny/go-mcache v0.0.0-20200121124330-1a8195b34f3a
 	github.com/gogo/protobuf v1.3.1
 	github.com/google/uuid v1.1.2
+	go.mongodb.org/mongo-driver v1.4.3
 	google.golang.org/grpc v1.33.1
 )
