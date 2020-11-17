@@ -101,7 +101,7 @@ func (i *mongoSessionStorage) CloseSession(id uuid.UUID) error {
 	return err
 }
 
-func (i *mongoSessionStorage) CheckExistance(id uuid.UUID) (bool, error) {
+func (i *mongoSessionStorage) CheckExistence(id uuid.UUID) (bool, error) {
 	n, err := i.mColl.CountDocuments(
 		context.Background(),
 		M{"game_id": M{"eq": id.String()}},
@@ -132,14 +132,12 @@ func ensureCollectionAndIndexes(mClient *mgo.Client) *mgo.Collection {
 	}
 
 	mColl := mDB.Collection("avalonGames")
-	_, err = mColl.Indexes().CreateMany(
+	_, err = mColl.Indexes().CreateOne(
 		context.Background(),
-		[]mgo.IndexModel{
-			{
-				Keys: "game_id",
-				Options: options.Index().
-					SetUnique(true),
-			},
+		mgo.IndexModel{
+			Keys: M{"game_id": 1},
+			Options: options.Index().
+				SetUnique(true),
 		},
 	)
 
