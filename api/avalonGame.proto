@@ -110,7 +110,7 @@ message VirtuousTeam {
 
 message PendingMission {
   uint32 mission_number = 10;
-  uint32 times_voted = 20;
+  uint32 team_picking_attempts = 20;
 }
 
 message MissionTeam {

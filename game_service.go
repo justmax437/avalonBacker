@@ -35,8 +35,8 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	newGame.State = api.GameSession_GAME_CREATED
 	newGame.MissionTeam.Members = nil
 	newGame.Mission = api.PendingMission{
-		MissionNumber: 0, // 0 means no mission
-		TimesVoted:    0,
+		MissionNumber:       0, // 0 means no mission
+		TeamPickingAttempts: 0,
 	}
 	newGame.LastMissionResult = nil
 
@@ -110,8 +110,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	case api.GameSession_GAME_CREATED:
 		game.State = api.GameSession_MISSION_TEAM_PICKING
 		game.Mission = api.PendingMission{
-			MissionNumber: 1,
-			TimesVoted:    0,
+			MissionNumber:       1,
+			TeamPickingAttempts: 0,
 		}
 
 		if err := g.sessions.StoreSession(game); err != nil {
@@ -140,8 +140,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		if g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId)) <= 0 {
 			// Mission Failed
 			game.State = api.GameSession_MISSION_TEAM_PICKING
-			game.Mission.TimesVoted++
-			if game.Mission.TimesVoted == 5 {
+			game.Mission.TeamPickingAttempts++
+			if game.Mission.TeamPickingAttempts == 5 {
 				game.State = api.GameSession_EVIL_TEAM_WON
 				game.EndgameReason = "Прошло 5 неудачных голосований за состав команды"
 				return &game.GameSession, nil
@@ -163,13 +163,13 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		}
 
 		// TODO accept team, start mission voting, mb smth else?
-		game.Mission
+		//GameInstance.MissionTeam is already set in AssignMissionTeam call, so we just proceed to next state
+		game.State = api.GameSession_MISSION_SUCCESS_VOTING
 
 		if err := g.sessions.StoreSession(game); err != nil {
 			return nil, errors.New("failed to store session data: " + err.Error())
 		}
 
-		game.State = api.GameSession_MISSION_SUCCESS_VOTING
 		return &game.GameSession, nil
 	case api.GameSession_MISSION_SUCCESS_VOTING:
 		// TODO check if everyone voted when votes storage are done
