@@ -32,6 +32,10 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	newGame.GameId.Value = uuid.New().String()
 	newGame.State = api.GameSession_GAME_CREATED
 	newGame.MissionTeam.Members = nil
+	newGame.Mission = api.PendingMission{
+		MissionNumber: 0, // 0 means no mission
+		TimesVoted:    0,
+	}
 	newGame.LastMissionResult = nil
 
 	allPLayers := make([]*api.Player, len(config.EvilTeam.Members)+len(config.GoodTeam.Members))
@@ -76,7 +80,7 @@ func (g *simpleGameService) GetEvilTeam(_ context.Context, session *api.GameSess
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
-	return game.EvilTeam, nil
+	return game.GetEvilTeam(), nil
 }
 
 func (g *simpleGameService) GetVirtuousTeam(_ context.Context, session *api.GameSession) (*api.VirtuousTeam, error) {
@@ -84,11 +88,57 @@ func (g *simpleGameService) GetVirtuousTeam(_ context.Context, session *api.Game
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
-	return game.GoodTeam, nil
+	return game.GetGoodTeam(), nil
 }
 
 func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSession) (*api.GameSession, error) {
-	panic("implement me")
+	//Explicitly ignore everything except game id received from clients
+	//Game state date from outside cannot be trusted
+	game, err := g.sessions.GetSession(apiIDToUUID(session.GameId))
+	if err != nil {
+		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+
+	switch game.GetState() {
+	// At this stage we have teams that are balanced and ready to play
+	// Everything is ready for first mission
+	//TODO Move all state handling to separate entity (GameStateHandler interface)
+	case api.GameSession_GAME_CREATED:
+		game.State = api.GameSession_MISSION_TEAM_PICKING
+		game.Mission = api.PendingMission{
+			MissionNumber: 1,
+			TimesVoted:    0,
+		}
+
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
+		return &game.GameSession, nil
+	case api.GameSession_MISSION_TEAM_PICKING:
+		// TODO check if everyone voted when votes storage are done
+		// TODO if vote is failed, pass leadership, increment vote counter and try again
+		// TODO populate MissionTeam according to vote result if voted successfully
+
+		if game.Mission.TimesVoted == 5 {
+			game.State = api.GameSession_EVIL_TEAM_WON
+			game.LastMissionResult = &api.MissionResult{
+				Failed: true,
+			}
+			return &game.GameSession, nil
+		}
+
+		game.State = api.GameSession_MISSION_SUCCESS_VOTING
+		return &game.GameSession, nil
+	case api.GameSession_MISSION_SUCCESS_VOTING:
+		// TODO check if everyone voted when votes storage are done
+
+	default:
+		return nil, errors.New("unknown game state encountered")
+	}
+
+	//Should never come to this line switch always returns from func
+	return nil, errors.New("unknown internal error")
 }
 
 func (g *simpleGameService) GetPendingMission(_ context.Context, session *api.GameSession) (*api.PendingMission, error) {
@@ -97,7 +147,7 @@ func (g *simpleGameService) GetPendingMission(_ context.Context, session *api.Ga
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
 
-	if game.Mission.MissionNumber == 0 {
+	if game.Mission.GetMissionNumber() == 0 {
 		return nil, errors.New("no mission in progress")
 	} else {
 		return &game.Mission, nil
@@ -110,7 +160,7 @@ func (g *simpleGameService) AssignMissionTeam(_ context.Context, assignReq *api.
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
 
-	if game.State != api.GameSession_MISSION_TEAM_PICKING {
+	if game.GetState() != api.GameSession_MISSION_TEAM_PICKING {
 		return nil, errors.New("mission teams assignment only allowed in MISSION_TEAM_PICKING state")
 	}
 
@@ -127,18 +177,18 @@ func (g *simpleGameService) GetMissionTeam(_ context.Context, session *api.GameS
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
-	if game.State > api.GameSession_MISSION_TEAM_PICKING && game.State <= api.GameSession_MISSION_ENDED {
+	if game.GetState() > api.GameSession_MISSION_TEAM_PICKING && game.State <= api.GameSession_MISSION_ENDED {
 		return nil, errors.New("no active mission")
 	}
 	return &game.MissionTeam, nil
 }
 
 func (g *simpleGameService) VoteForMissionTeam(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
-	game, err := g.sessions.GetSession(apiIDToUUID(context.Session.GameId))
+	game, err := g.sessions.GetSession(apiIDToUUID(context.Session.GetGameId()))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
-	if game.State != api.GameSession_MISSION_TEAM_VOTING {
+	if game.GetState() != api.GameSession_MISSION_TEAM_VOTING {
 		return nil, errors.New("mission team votes are only allowed in MISSION_TEAM_VOTING state")
 	}
 	if game.Mission.TimesVoted == 5 {
@@ -156,5 +206,5 @@ func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, context *ap
 }
 
 func apiIDToUUID(id *api.UUID) uuid.UUID {
-	return uuid.MustParse(id.Value)
+	return uuid.MustParse(id.GetValue())
 }

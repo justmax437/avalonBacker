@@ -5,7 +5,6 @@ option go_package = "api";
 
 import "google/protobuf/empty.proto";
 
-//TODO: Better handling of exceptional moments, separate error type instead of Empty
 service GameService {
   //CreateSession with specified players and options.
   //Should be called first to obtain a handle for created game,
