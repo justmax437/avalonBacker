@@ -14,6 +14,7 @@ func main() {
 		NewGameService(
 			//NewMemoryStorage(30*time.Minute),
 			NewMongoSessionStorage(),
+			NewVoteStorage(),
 		),
 	)
 

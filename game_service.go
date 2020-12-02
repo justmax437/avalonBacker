@@ -11,14 +11,16 @@ import (
 
 type simpleGameService struct {
 	sessions GameSessionStorage
+	votes    *VoteStorage
 }
 
-func NewGameService(s GameSessionStorage) *simpleGameService {
+func NewGameService(s GameSessionStorage, votes *VoteStorage) *simpleGameService {
 	if s == nil {
 		log.Fatal("GameSessionStorage not provided")
 	}
 	gs := new(simpleGameService)
 	gs.sessions = s
+	gs.votes = votes
 	return gs
 }
 
