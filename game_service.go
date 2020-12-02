@@ -130,8 +130,6 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			}
 		}
 	case api.GameSession_MISSION_TEAM_VOTING:
-		// TODO check if everyone voted when votes storage are done
-		// TODO if vote is failed, pass leadership, increment vote counter and try again
 		// TODO populate MissionTeam according to vote result if voted successfully
 
 		if game.TotalPlayersCount() > int(g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GetGameId()))) {
@@ -145,6 +143,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			game.Mission.TimesVoted++
 			if game.Mission.TimesVoted == 5 {
 				game.State = api.GameSession_EVIL_TEAM_WON
+				game.EndgameReason = "Прошло 5 неудачных голосований за состав команды"
 				return nil, nil
 			}
 
@@ -162,7 +161,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 
 			return &game.GameSession, nil
 		}
-		//Mission succeeded
+
+		// TODO accept team, start mission voting, mb smth else?
 
 		if err := g.sessions.StoreSession(game); err != nil {
 			return nil, errors.New("failed to store session data: " + err.Error())
