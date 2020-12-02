@@ -130,14 +130,20 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		}
 
 		if g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId)) <= 0 {
+			// Mission Failed
 			game.Mission.TimesVoted++
 			if game.Mission.TimesVoted == 5 {
 				game.State = api.GameSession_EVIL_TEAM_WON
 				return nil, nil
 			}
-			//TODO pass leadership
-		} else {
 
+			if game.TotalPlayersCount() > game.CurrentLeaderIndex {
+				game.CurrentLeaderIndex++
+				game.Leader = game.AllPlayers[game.CurrentLeaderIndex]
+			}
+
+		} else {
+			//Mission succeeded
 		}
 
 		// TODO defer from push state func
