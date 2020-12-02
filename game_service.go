@@ -138,8 +138,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		// TODO check if everyone voted when votes storage are done
 
 		if len(game.MissionTeam.Members) > int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(session.GameId))) {
-			log.Println(game.GameId, "not all players voted")
-			return nil, errors.New("not all players voted")
+			log.Println(game.GameId, "not all players in mission team voted")
+			return nil, errors.New("not all players in mission team voted")
 		}
 
 		failVotesRequired := 1
