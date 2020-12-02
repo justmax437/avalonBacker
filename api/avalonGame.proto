@@ -68,6 +68,8 @@ message GameSession {
   string endgame_reason = 15; //Text in russian, explains why game reached any of *TEAM_WON states. Set an *TEAM_WON states only.
   Player leader = 20;
   MissionResult last_mission_result = 30; //Set at MISSION_ENDED state
+  int32 missions_passed = 40;
+  int32 missions_failed = 41;
   //What else?
 }
 
