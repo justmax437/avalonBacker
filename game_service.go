@@ -122,12 +122,13 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		// TODO if vote is failed, pass leadership, increment vote counter and try again
 		// TODO populate MissionTeam according to vote result if voted successfully
 
+		if game.TotalPlayersCount() > int(g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId))) {
+
+		}
+
 		if game.Mission.TimesVoted == 5 {
 			game.State = api.GameSession_EVIL_TEAM_WON
-			game.LastMissionResult = &api.MissionResult{
-				Failed: true,
-			}
-			return &game.GameSession, nil
+			return nil, nil
 		}
 
 		game.State = api.GameSession_MISSION_SUCCESS_VOTING
@@ -135,6 +136,18 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	case api.GameSession_MISSION_SUCCESS_VOTING:
 		// TODO check if everyone voted when votes storage are done
 
+		if len(game.MissionTeam.Members) > int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(session.GameId))) {
+
+		}
+
+		failVotesRequired := 1
+		if game.Mission.MissionNumber == 4 &&
+			game.TotalPlayersCount() > 7 {
+			failVotesRequired = 2
+		}
+
+		g.votes.ResetVotes(apiIDToUUID(game.GetGameId()))
+		return &game.GameSession, nil
 	default:
 		return nil, errors.New("unknown game state encountered")
 	}
@@ -195,11 +208,6 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 		return nil, errors.New("mission team votes are only allowed in MISSION_TEAM_VOTING state")
 	}
 
-	if game.Mission.TimesVoted == 5 {
-		game.State = api.GameSession_EVIL_TEAM_WON
-		return nil, nil
-	}
-
 	if ctx.GetVote() == api.VoteContext_NEGATIVE {
 		g.votes.AddNegativeTeamVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
@@ -208,15 +216,24 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 		g.votes.AddPositiveTeamVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
 
-	if err = g.sessions.StoreSession(game); err != nil {
-		return nil, err
-	}
-
 	return nil, nil
 }
 
-func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, context *api.VoteContext) (*types.Empty, error) {
-	panic("implement me")
+func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, ctx *api.VoteContext) (*types.Empty, error) {
+	game, err := g.sessions.GetSession(apiIDToUUID(ctx.Session.GetGameId()))
+	if err != nil {
+		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+
+	switch ctx.Vote {
+	case api.VoteContext_NEGATIVE:
+		g.votes.AddNegativeMissionVote(apiIDToUUID(game.GetGameId()), ctx.Voter)
+	case api.VoteContext_POSITIVE:
+		g.votes.AddPositiveMissionVote(apiIDToUUID(game.GetGameId()), ctx.Voter)
+	}
+
+	return nil, nil
+
 }
 
 func apiIDToUUID(id *api.UUID) uuid.UUID {
