@@ -190,18 +190,24 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
 	}
+
 	if game.GetState() != api.GameSession_MISSION_TEAM_VOTING {
 		return nil, errors.New("mission team votes are only allowed in MISSION_TEAM_VOTING state")
 	}
+
+	if game.Mission.TimesVoted == 5 {
+		game.State = api.GameSession_EVIL_TEAM_WON
+		return nil, nil
+	}
+
 	if ctx.GetVote() == api.VoteContext_NEGATIVE {
 		g.votes.AddNegativeMissionVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
+
 	if ctx.GetVote() == api.VoteContext_POSITIVE {
 		g.votes.AddPositiveMissionVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
-	if game.Mission.TimesVoted == 5 {
-		game.State = api.GameSession_EVIL_TEAM_WON
-	}
+
 	if err = g.sessions.StoreSession(game); err != nil {
 		return nil, err
 	}
