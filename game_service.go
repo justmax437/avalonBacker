@@ -141,7 +141,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			// Mission Failed
 			game.State = api.GameSession_MISSION_TEAM_PICKING
 			game.Mission.TeamPickingAttempts++
-			if game.Mission.TeamPickingAttempts == 5 {
+			if game.Mission.TeamPickingAttempts == 6 {
 				game.State = api.GameSession_EVIL_TEAM_WON
 				game.EndgameReason = "Прошло 5 неудачных голосований за состав команды"
 				return &game.GameSession, nil
@@ -162,7 +162,6 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			return &game.GameSession, nil
 		}
 
-		// TODO accept team, start mission voting, mb smth else?
 		//GameInstance.MissionTeam is already set in AssignMissionTeam call, so we just proceed to next state
 		game.State = api.GameSession_MISSION_SUCCESS_VOTING
 
@@ -179,11 +178,11 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			return nil, errors.New("not all players in mission team voted")
 		}
 
-		failVotesRequired := 1
+		/*failVotesRequired := 1
 		if game.Mission.MissionNumber == 4 &&
 			game.TotalPlayersCount() > 7 {
 			failVotesRequired = 2
-		}
+		}*/
 
 		g.votes.ResetVotes(apiIDToUUID(game.GetGameId()))
 		if err := g.sessions.StoreSession(game); err != nil {
@@ -286,6 +285,9 @@ func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, ctx *api.Vo
 
 }
 
+func (g *simpleGameService) AssassinateAllegedMerlin(_ context.Context, ctx *api.AssassinationContext) (*api.AssassinationOutcome, error) {
+	return nil, nil
+}
 func apiIDToUUID(id *api.UUID) uuid.UUID {
 	return uuid.MustParse(id.GetValue())
 }
