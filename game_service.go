@@ -137,10 +137,13 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 				return nil, nil
 			}
 
-			if game.TotalPlayersCount() > game.CurrentLeaderIndex {
+			if game.TotalPlayersCount() == game.CurrentLeaderIndex+1 {
+				game.CurrentLeaderIndex = 0
+			} else {
 				game.CurrentLeaderIndex++
-				game.Leader = game.AllPlayers[game.CurrentLeaderIndex]
 			}
+
+			game.Leader = game.AllPlayers[game.CurrentLeaderIndex]
 
 			if err := g.sessions.StoreSession(game); err != nil {
 				return nil, errors.New("failed to store session data: " + err.Error())
