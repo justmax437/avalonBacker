@@ -12,6 +12,10 @@ type GameInstance struct {
 	Mission     api.PendingMission
 }
 
+func (gi *GameInstance) TotalPlayersCount() int {
+	return len(gi.EvilTeam.Members) + len(gi.GoodTeam.Members)
+}
+
 type GameSessionStorage interface {
 	StoreSession(instance *GameInstance) error
 	GetSession(id uuid.UUID) (*GameInstance, error)
