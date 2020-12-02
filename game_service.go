@@ -201,11 +201,11 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 	}
 
 	if ctx.GetVote() == api.VoteContext_NEGATIVE {
-		g.votes.AddNegativeMissionVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
+		g.votes.AddNegativeTeamVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
 
 	if ctx.GetVote() == api.VoteContext_POSITIVE {
-		g.votes.AddPositiveMissionVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
+		g.votes.AddPositiveTeamVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
 
 	if err = g.sessions.StoreSession(game); err != nil {
