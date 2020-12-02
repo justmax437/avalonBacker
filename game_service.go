@@ -40,19 +40,14 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	}
 	newGame.LastMissionResult = nil
 
-	allPLayers := make([]*api.Player, len(config.EvilTeam.Members)+len(config.GoodTeam.Members))
-
-	shufflePlayers(append(
+	allPLayers := make([]*api.Player, 0, len(config.EvilTeam.Members)+len(config.GoodTeam.Members))
+	allPLayers = append(
 		append(allPLayers, config.EvilTeam.Members...),
-		config.GoodTeam.Members...))
-
+		config.GoodTeam.Members...)
+	shufflePlayers(allPLayers)
 	newGame.Leader = allPLayers[0]
-
-	//newGame.Leader = pickRandomLeader(
-	//	append(
-	//		append(allPLayers, config.EvilTeam.Members...),
-	//		config.GoodTeam.Members...),
-	//)
+	newGame.CurrentLeaderIndex = 0
+	newGame.AllPlayers = allPLayers
 
 	err := g.sessions.StoreSession(newGame)
 	if err == nil {
@@ -129,14 +124,25 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		// TODO if vote is failed, pass leadership, increment vote counter and try again
 		// TODO populate MissionTeam according to vote result if voted successfully
 
-		if game.TotalPlayersCount() > int(g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId))) {
+		if game.TotalPlayersCount() > int(g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GetGameId()))) {
 			log.Println(game.GameId, "not all players voted")
 			return nil, errors.New("not all players voted")
 		}
 
-		if game.Mission.TimesVoted == 5 {
-			game.State = api.GameSession_EVIL_TEAM_WON
-			return nil, nil
+		if g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId)) <= 0 {
+			game.Mission.TimesVoted++
+			if game.Mission.TimesVoted == 5 {
+				game.State = api.GameSession_EVIL_TEAM_WON
+				return nil, nil
+			}
+			//TODO pass leadership
+		} else {
+
+		}
+
+		// TODO defer from push state func
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
 		}
 
 		game.State = api.GameSession_MISSION_SUCCESS_VOTING
@@ -144,7 +150,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	case api.GameSession_MISSION_SUCCESS_VOTING:
 		// TODO check if everyone voted when votes storage are done
 
-		if len(game.MissionTeam.Members) > int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(session.GameId))) {
+		if len(game.MissionTeam.Members) > int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(session.GetGameId()))) {
 			log.Println(game.GameId, "not all players in mission team voted")
 			return nil, errors.New("not all players in mission team voted")
 		}
@@ -156,13 +162,14 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		}
 
 		g.votes.ResetVotes(apiIDToUUID(game.GetGameId()))
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
 		return &game.GameSession, nil
 	default:
 		return nil, errors.New("unknown game state encountered")
 	}
-
-	//Should never come to this line switch always returns from func
-	return nil, errors.New("unknown internal error")
 }
 
 func (g *simpleGameService) GetPendingMission(_ context.Context, session *api.GameSession) (*api.PendingMission, error) {
@@ -232,6 +239,10 @@ func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, ctx *api.Vo
 	game, err := g.sessions.GetSession(apiIDToUUID(ctx.Session.GetGameId()))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+
+	if game.GetState() != api.GameSession_MISSION_SUCCESS_VOTING {
+		return nil, errors.New("mission team votes are only allowed in MISSION_SUCCESS_VOTING state")
 	}
 
 	switch ctx.Vote {

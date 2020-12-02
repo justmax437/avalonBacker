@@ -10,10 +10,14 @@ type GameInstance struct {
 	api.GameConfig
 	MissionTeam api.MissionTeam
 	Mission     api.PendingMission
+
+	//These two are set during game creation
+	CurrentLeaderIndex int
+	AllPlayers         []*api.Player //AllPlayers are shuffled sum of Good and Evil teams
 }
 
 func (gi *GameInstance) TotalPlayersCount() int {
-	return len(gi.EvilTeam.Members) + len(gi.GoodTeam.Members)
+	return len(gi.AllPlayers)
 }
 
 type GameSessionStorage interface {
