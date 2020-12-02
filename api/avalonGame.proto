@@ -33,6 +33,12 @@ service GameService {
   //Call PushGameState AFTER ALL players voted!
   rpc VoteForMissionTeam (VoteContext) returns (google.protobuf.Empty) {}
   rpc VoteForMissionSuccess (VoteContext) returns (google.protobuf.Empty) {}
+
+  //AssassinateAllegedMerlin is only used in a POST_MISSIONS_ACTIONS state when good team are winning
+  //Its the last chance for evil team to win, if they can guess merlin's identity
+  //Returns an AssassinationOutcome, that reports if killed player was merlin.
+  //GameState in response is determining which team won the game, will ether be VIRTUOUS_TEAM_WON or EVIL_TEAM_WON
+  rpc AssassinateAllegedMerlin(AssassinationContext) returns (AssassinationOutcome) {}
 }
 
 //Maybe at some point we will get to it...
@@ -73,10 +79,10 @@ message GameConfig {
 
 //GameExtensions holds flags specifying additional player roles and rules to be used during game session
 message GameExtensions {
+  //Merlin and assassin are always in game
   bool percival_and_morgana = 1;
-  bool assassin_and_merlin = 2;
-  bool oberon = 3;
-  bool mordred = 4;
+  bool oberon = 2;
+  bool mordred = 3;
   //bool lady_of_the_lake
 }
 
@@ -87,17 +93,16 @@ message Player {
 
 message EvilTeam {
   repeated Player members = 10;
-  //Ignored for now
   Player assassin = 20;
+  //Rest are ignored for now
   Player oberon = 30;
   Player morgana = 40;
 }
 
 message VirtuousTeam {
   repeated Player members = 10;
-  //Ignored for now
   Player merlin = 20;
-  Player percival = 30;
+  Player percival = 30; //Ignored for now
 }
 
 message PendingMission {
@@ -129,4 +134,14 @@ message VoteContext {
     POSITIVE = 1;
   }
   VoteOption vote = 30;
+}
+
+message AssassinationContext {
+  GameSession session = 1;
+  Player target = 2; //Alleged Merlin to be killed
+}
+
+message AssassinationOutcome {
+  GameSession session = 1;
+  bool merlin_was_killed = 2; //true if target from AssassinationContext was a Merlin
 }
