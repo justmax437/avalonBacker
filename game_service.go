@@ -41,11 +41,18 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	newGame.LastMissionResult = nil
 
 	allPLayers := make([]*api.Player, len(config.EvilTeam.Members)+len(config.GoodTeam.Members))
-	newGame.Leader = pickRandomLeader(
-		append(
-			append(allPLayers, config.EvilTeam.Members...),
-			config.GoodTeam.Members...),
-	)
+
+	shufflePlayers(append(
+		append(allPLayers, config.EvilTeam.Members...),
+		config.GoodTeam.Members...))
+
+	newGame.Leader = allPLayers[0]
+
+	//newGame.Leader = pickRandomLeader(
+	//	append(
+	//		append(allPLayers, config.EvilTeam.Members...),
+	//		config.GoodTeam.Members...),
+	//)
 
 	err := g.sessions.StoreSession(newGame)
 	if err == nil {

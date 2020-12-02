@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/justmax437/avalonBacker/api"
 	"math/rand"
+	"time"
 )
 
 func checkNumberOfPlayersValid(goodPlayers, evilPlayers int) bool {
@@ -16,4 +17,11 @@ func checkNumberOfPlayersValid(goodPlayers, evilPlayers int) bool {
 
 func pickRandomLeader(players []*api.Player) *api.Player {
 	return players[rand.Intn(len(players))]
+}
+
+func shufflePlayers(players []*api.Player) {
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(players), func(i, j int) {
+		players[i], players[j] = players[j], players[i]
+	})
 }
