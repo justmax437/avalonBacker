@@ -120,6 +120,16 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 
 		return &game.GameSession, nil
 	case api.GameSession_MISSION_TEAM_PICKING:
+		//This state is where the client picks team for mission by calling AssignMissionTeam
+		if len(game.MissionTeam.Members) == 0 {
+			return nil, errors.New("mission team was not assigned, call AssignMissionTeam first")
+		} else {
+			game.State = api.GameSession_MISSION_TEAM_VOTING
+			if err := g.sessions.StoreSession(game); err != nil {
+				return nil, errors.New("failed to store session data: " + err.Error())
+			}
+		}
+	case api.GameSession_MISSION_TEAM_VOTING:
 		// TODO check if everyone voted when votes storage are done
 		// TODO if vote is failed, pass leadership, increment vote counter and try again
 		// TODO populate MissionTeam according to vote result if voted successfully
@@ -131,6 +141,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 
 		if g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GameId)) <= 0 {
 			// Mission Failed
+			game.State = api.GameSession_MISSION_TEAM_PICKING
 			game.Mission.TimesVoted++
 			if game.Mission.TimesVoted == 5 {
 				game.State = api.GameSession_EVIL_TEAM_WON
@@ -150,11 +161,9 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			}
 
 			return &game.GameSession, nil
-		} else {
-			//Mission succeeded
 		}
+		//Mission succeeded
 
-		// TODO defer from push state func
 		if err := g.sessions.StoreSession(game); err != nil {
 			return nil, errors.New("failed to store session data: " + err.Error())
 		}
@@ -184,6 +193,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	default:
 		return nil, errors.New("unknown game state encountered")
 	}
+
+	return nil, errors.New("unknown error")
 }
 
 func (g *simpleGameService) GetPendingMission(_ context.Context, session *api.GameSession) (*api.PendingMission, error) {
@@ -232,6 +243,10 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 	game, err := g.sessions.GetSession(apiIDToUUID(ctx.Session.GetGameId()))
 	if err != nil {
 		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+
+	if len(game.MissionTeam.Members) == 0 {
+		return nil, errors.New("mission team was not assigned, call AssignMissionTeam first")
 	}
 
 	if game.GetState() != api.GameSession_MISSION_TEAM_VOTING {
