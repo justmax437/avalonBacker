@@ -193,6 +193,12 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, context *api.V
 	if game.GetState() != api.GameSession_MISSION_TEAM_VOTING {
 		return nil, errors.New("mission team votes are only allowed in MISSION_TEAM_VOTING state")
 	}
+	if context.GetVote() == api.VoteContext_NEGATIVE {
+		g.votes.AddNegativeMissionVote(apiIDToUUID(context.Session.GetGameId()))
+	}
+	if context.GetVote() == api.VoteContext_POSITIVE {
+		g.votes.AddPositiveMissionVote(apiIDToUUID(context.Session.GetGameId()))
+	}
 	if game.Mission.TimesVoted == 5 {
 		game.State = api.GameSession_EVIL_TEAM_WON
 	}
