@@ -6,6 +6,11 @@ type VoteStorage struct {
 	missionVotes map[uuid.UUID]int8
 }
 
+func NewVoteStorage() *VoteStorage {
+	return &VoteStorage{make(map[uuid.UUID]int8, 0)}
+
+}
+
 func (v *VoteStorage) AddPositiveMissionVote(id uuid.UUID) {
 	v.missionVotes[id]++
 }
