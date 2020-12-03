@@ -120,8 +120,8 @@ message MissionTeam {
 message MissionResult {
   bool failed = 10;
   //TODO: There must be a better way, than just 2 lists
-  repeated Player positive_votes = 20;
-  repeated Player negative_votes = 30;
+  int32 positive_votes = 20;
+  int32 negative_votes = 30;
 }
 
 message AssignTeamContext {

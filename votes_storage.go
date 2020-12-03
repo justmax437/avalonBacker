@@ -36,7 +36,6 @@ func (v *VoteStorage) AddNegativeMissionVote(gameId uuid.UUID, player *api.Playe
 		log.Println(gameId, "repeated vote attempt by", player)
 		return
 	}
-	v.missionVotes[gameId]--
 	v.playersVotedMissions[gameId][player.Id] = true
 }
 
@@ -53,6 +52,7 @@ func (v *VoteStorage) AddPositiveTeamVote(gameId uuid.UUID, player *api.Player) 
 		log.Println(gameId, "repeated vote attempt by", player)
 		return
 	}
+
 	v.teamVotes[gameId]++
 	v.playersVotedTeams[gameId][player.Id] = true
 }

@@ -33,7 +33,7 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	newGame.GameConfig = *config
 	newGame.GameId = &api.UUID{Value: uuid.New().String()}
 	newGame.State = api.GameSession_GAME_CREATED
-	newGame.MissionTeam = api.MissionTeam{nil}
+	newGame.MissionTeam = api.MissionTeam{}
 	newGame.Mission = api.PendingMission{
 		MissionNumber:       0, // 0 means no mission
 		TeamPickingAttempts: 0,
@@ -173,16 +173,24 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	case api.GameSession_MISSION_SUCCESS_VOTING:
 		// TODO check if everyone voted when votes storage are done
 
-		if len(game.MissionTeam.Members) > int(g.votes.NumberOfPlayersVotedForMission(apiIDToUUID(session.GetGameId()))) {
+		if len(game.MissionTeam.Members) > g.votes.NumberOfPlayersVotedForMission(apiIDToUUID(session.GetGameId())) {
 			log.Println(game.GameId, "not all players in mission team voted")
 			return nil, errors.New("not all players in mission team voted")
 		}
 
-		/*failVotesRequired := 1
+		failVotesRequired := 1
 		if game.Mission.MissionNumber == 4 &&
-			game.TotalPlayersCount() > 7 {
+			game.TotalPlayersCount() >= 7 {
 			failVotesRequired = 2
-		}*/
+		}
+
+		failVotes := len(game.MissionTeam.Members) - int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(game.GetGameId())))
+		game.State = api.GameSession_MISSION_ENDED
+		game.LastMissionResult = &api.MissionResult{
+			Failed:        failVotes >= failVotesRequired,
+			PositiveVotes: int32(game.TotalPlayersCount() - failVotes),
+			NegativeVotes: int32(failVotes),
+		}
 
 		g.votes.ResetVotes(apiIDToUUID(game.GetGameId()))
 		if err := g.sessions.StoreSession(game); err != nil {
@@ -190,6 +198,8 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		}
 
 		return &game.GameSession, nil
+	case api.GameSession_MISSION_ENDED:
+		return nil, nil
 	default:
 		return nil, errors.New("unknown game state encountered")
 	}
