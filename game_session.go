@@ -11,9 +11,10 @@ type GameInstance struct {
 	MissionTeam api.MissionTeam
 	Mission     api.PendingMission
 
-	//These two are set during game creation
-	CurrentLeaderIndex int
-	AllPlayers         []*api.Player //AllPlayers are shuffled sum of Good and Evil teams
+	//Next two are set during game creation
+	CurrentLeaderIndex int `json:"current_leader_index" bson:"current_leader_index"`
+	//AllPlayers are shuffled sum of Good and Evil teams
+	AllPlayers []*api.Player `json:"all_players" bson:"all_players"`
 }
 
 func (gi *GameInstance) TotalPlayersCount() int {
