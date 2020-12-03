@@ -15,10 +15,6 @@ func checkNumberOfPlayersValid(goodPlayers, evilPlayers int) bool {
 	}[goodPlayers][evilPlayers]
 }
 
-func pickRandomLeader(players []*api.Player) *api.Player {
-	return players[rand.Intn(len(players))]
-}
-
 func shufflePlayers(players []*api.Player) {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(players), func(i, j int) {
