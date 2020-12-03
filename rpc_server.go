@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/justmax437/avalonBacker/api"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -17,6 +18,8 @@ func main() {
 			NewVoteStorage(),
 		),
 	)
+
+	reflection.Register(grpcServer)
 
 	err := grpcServer.Serve(getServerSocket())
 	if err != nil {

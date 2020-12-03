@@ -44,6 +44,10 @@ func (v *VoteStorage) GetMissionVotesCountForGame(id uuid.UUID) int8 {
 	return v.missionVotes[id]
 }
 
+func (v *VoteStorage) NumberOfPlayersVotedForMission(id uuid.UUID) int {
+	return len(v.playersVotedMissions[id])
+}
+
 func (v *VoteStorage) AddPositiveTeamVote(gameId uuid.UUID, player *api.Player) {
 	if _, alreadyVoted := v.playersVotedMissions[gameId][player.Id]; alreadyVoted {
 		log.Println(gameId, "repeated vote attempt by", player)
@@ -64,6 +68,10 @@ func (v *VoteStorage) AddNegativeTeamVote(gameId uuid.UUID, player *api.Player) 
 
 func (v *VoteStorage) GetTeamVotesCountForGame(id uuid.UUID) int8 {
 	return v.teamVotes[id]
+}
+
+func (v *VoteStorage) NumberOfPlayersVotedForTeam(id uuid.UUID) int {
+	return len(v.playersVotedTeams[id])
 }
 
 func (v *VoteStorage) ResetVotes(gameId uuid.UUID) {

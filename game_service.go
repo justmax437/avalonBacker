@@ -31,9 +31,9 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 
 	newGame := new(GameInstance)
 	newGame.GameConfig = *config
-	newGame.GameId.Value = uuid.New().String()
+	newGame.GameId = &api.UUID{Value: uuid.New().String()}
 	newGame.State = api.GameSession_GAME_CREATED
-	newGame.MissionTeam.Members = nil
+	newGame.MissionTeam = api.MissionTeam{nil}
 	newGame.Mission = api.PendingMission{
 		MissionNumber:       0, // 0 means no mission
 		TeamPickingAttempts: 0,
@@ -49,6 +49,7 @@ func (g *simpleGameService) CreateSession(_ context.Context, config *api.GameCon
 	newGame.CurrentLeaderIndex = 0
 	newGame.AllPlayers = allPLayers
 
+	g.votes.ResetVotes(apiIDToUUID(newGame.GetGameId()))
 	err := g.sessions.StoreSession(newGame)
 	if err == nil {
 		return &newGame.GameSession, nil
@@ -65,7 +66,7 @@ func (g *simpleGameService) TerminateSession(_ context.Context, session *api.Gam
 	}
 
 	if exist, err := g.sessions.CheckExistence(gameId); err == nil && exist {
-		return nil, g.sessions.CloseSession(gameId)
+		return &types.Empty{}, g.sessions.CloseSession(gameId)
 	} else {
 		return nil, errors.New("failed to terminate session: " + err.Error())
 	}
@@ -129,10 +130,9 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 				return nil, errors.New("failed to store session data: " + err.Error())
 			}
 		}
+		return &game.GameSession, nil
 	case api.GameSession_MISSION_TEAM_VOTING:
-		// TODO populate MissionTeam according to vote result if voted successfully
-
-		if game.TotalPlayersCount() > int(g.votes.GetTeamVotesCountForGame(apiIDToUUID(session.GetGameId()))) {
+		if game.TotalPlayersCount() > int(g.votes.NumberOfPlayersVotedForTeam(apiIDToUUID(session.GetGameId()))) {
 			log.Println(game.GameId, "not all players voted")
 			return nil, errors.New("not all players voted")
 		}
@@ -173,7 +173,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 	case api.GameSession_MISSION_SUCCESS_VOTING:
 		// TODO check if everyone voted when votes storage are done
 
-		if len(game.MissionTeam.Members) > int(g.votes.GetMissionVotesCountForGame(apiIDToUUID(session.GetGameId()))) {
+		if len(game.MissionTeam.Members) > int(g.votes.NumberOfPlayersVotedForMission(apiIDToUUID(session.GetGameId()))) {
 			log.Println(game.GameId, "not all players in mission team voted")
 			return nil, errors.New("not all players in mission team voted")
 		}
@@ -194,6 +194,7 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 		return nil, errors.New("unknown game state encountered")
 	}
 
+	//Should never come to this
 	return nil, errors.New("unknown error")
 }
 
@@ -225,7 +226,7 @@ func (g *simpleGameService) AssignMissionTeam(_ context.Context, assignReq *api.
 		return nil, err
 	}
 
-	return nil, nil
+	return &types.Empty{}, nil
 }
 
 func (g *simpleGameService) GetMissionTeam(_ context.Context, session *api.GameSession) (*api.MissionTeam, error) {
@@ -261,7 +262,7 @@ func (g *simpleGameService) VoteForMissionTeam(_ context.Context, ctx *api.VoteC
 		g.votes.AddPositiveTeamVote(apiIDToUUID(ctx.Session.GetGameId()), ctx.Voter)
 	}
 
-	return nil, nil
+	return &types.Empty{}, nil
 }
 
 func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, ctx *api.VoteContext) (*types.Empty, error) {
@@ -281,12 +282,46 @@ func (g *simpleGameService) VoteForMissionSuccess(_ context.Context, ctx *api.Vo
 		g.votes.AddPositiveMissionVote(apiIDToUUID(game.GetGameId()), ctx.Voter)
 	}
 
-	return nil, nil
-
+	return &types.Empty{}, nil
 }
 
 func (g *simpleGameService) AssassinateAllegedMerlin(_ context.Context, ctx *api.AssassinationContext) (*api.AssassinationOutcome, error) {
-	return nil, nil
+	game, err := g.sessions.GetSession(apiIDToUUID(ctx.Session.GetGameId()))
+	if err != nil {
+		return nil, errors.New("failed to read session data: " + err.Error())
+	}
+
+	if game.GetState() != api.GameSession_POST_MISSIONS_ACTIONS {
+		return nil, errors.New("assassinations are only available during POST_MISSIONS_ACTIONS state")
+	}
+
+	if game.GoodTeam.Merlin.Id == ctx.Target.Id {
+		//Evils successfully found merlin
+		game.State = api.GameSession_EVIL_TEAM_WON
+		game.EndgameReason = "Мерлин был убит ассасином"
+
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
+		return &api.AssassinationOutcome{
+			Session:         &game.GameSession,
+			MerlinWasKilled: true,
+		}, nil
+	} else {
+		//Merlin stays alive
+		game.State = api.GameSession_VIRTUOUS_TEAM_WON
+		game.EndgameReason = "Все миссии завершены и Ассасину не удалось убить Мерлина"
+
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
+		return &api.AssassinationOutcome{
+			Session:         &game.GameSession,
+			MerlinWasKilled: false,
+		}, nil
+	}
 }
 func apiIDToUUID(id *api.UUID) uuid.UUID {
 	return uuid.MustParse(id.GetValue())
