@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/gogo/protobuf/types"
 	"github.com/google/uuid"
 	"github.com/justmax437/avalonBacker/api"
@@ -192,6 +193,12 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 			NegativeVotes: int32(failVotes),
 		}
 
+		if game.LastMissionResult.Failed {
+			game.MissionsFailed++
+		} else {
+			game.MissionsPassed++
+		}
+
 		g.votes.ResetVotes(apiIDToUUID(game.GetGameId()))
 		if err := g.sessions.StoreSession(game); err != nil {
 			return nil, errors.New("failed to store session data: " + err.Error())
@@ -199,7 +206,39 @@ func (g *simpleGameService) PushGameState(_ context.Context, session *api.GameSe
 
 		return &game.GameSession, nil
 	case api.GameSession_MISSION_ENDED:
-		return nil, nil
+		game.Mission.MissionNumber++
+		game.Mission.TeamPickingAttempts = 0
+		game.MissionTeam.Members = nil
+
+		if game.Mission.MissionNumber < 6 {
+			game.State = api.GameSession_MISSION_TEAM_PICKING
+		} else {
+			game.Mission.MissionNumber = 0 // No mission
+			game.State = api.GameSession_POST_MISSIONS_ACTIONS
+		}
+
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
+		return &game.GameSession, nil
+	case api.GameSession_POST_MISSIONS_ACTIONS:
+		//If not a single post mission action changed game state to ether of *TEAM_WON states,
+		//than the winner is calculated from how many missions were a success
+
+		if game.MissionsPassed >= game.MissionsFailed {
+			game.State = api.GameSession_VIRTUOUS_TEAM_WON
+			game.EndgameReason = fmt.Sprintf("Силы добра победили в %d/5 миссий", game.MissionsPassed)
+		} else {
+			game.State = api.GameSession_EVIL_TEAM_WON
+			game.EndgameReason = fmt.Sprintf("Силы зла победили в %d/5 миссий, ", game.MissionsFailed)
+		}
+
+		if err := g.sessions.StoreSession(game); err != nil {
+			return nil, errors.New("failed to store session data: " + err.Error())
+		}
+
+		return &game.GameSession, nil
 	default:
 		return nil, errors.New("unknown game state encountered")
 	}
@@ -305,6 +344,10 @@ func (g *simpleGameService) AssassinateAllegedMerlin(_ context.Context, ctx *api
 		return nil, errors.New("assassinations are only available during POST_MISSIONS_ACTIONS state")
 	}
 
+	if game.MissionsPassed < game.MissionsFailed {
+		return nil, errors.New("evil team is already winning, no assassination required")
+	}
+
 	if game.GoodTeam.Merlin.Id == ctx.Target.Id {
 		//Evils successfully found merlin
 		game.State = api.GameSession_EVIL_TEAM_WON
@@ -321,7 +364,7 @@ func (g *simpleGameService) AssassinateAllegedMerlin(_ context.Context, ctx *api
 	} else {
 		//Merlin stays alive
 		game.State = api.GameSession_VIRTUOUS_TEAM_WON
-		game.EndgameReason = "Все миссии завершены и Ассасину не удалось убить Мерлина"
+		game.EndgameReason = fmt.Sprintf("%d/5 миссий завершены победой добра и Ассасину не удалось убить Мерлина", game.MissionsPassed)
 
 		if err := g.sessions.StoreSession(game); err != nil {
 			return nil, errors.New("failed to store session data: " + err.Error())

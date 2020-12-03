@@ -60,7 +60,7 @@ message GameSession {
     MISSION_TEAM_VOTING = 25;
     MISSION_SUCCESS_VOTING = 26;
     MISSION_ENDED = 30;
-    POST_MISSIONS_ACTIONS = 100; // For playing additional roles, ignoring for now
+    POST_MISSIONS_ACTIONS = 100;
     VIRTUOUS_TEAM_WON = 150;
     EVIL_TEAM_WON = 155;
   }
